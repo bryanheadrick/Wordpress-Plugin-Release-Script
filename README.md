@@ -28,20 +28,31 @@ Use wildcard patterns to filter the plugin list in the interactive menu:
 
 ```bash
 # Show only plugins starting with "woo"
-./build-release.sh woo*
+./build-release.sh "woo*"
 
 # Show only plugins ending with "-addon"
-./build-release.sh *-addon
+./build-release.sh "*-addon"
 
 # Show plugins containing "commerce"
-./build-release.sh *commerce*
+./build-release.sh "*commerce*"
 ```
+
+**Important:** Always **quote the pattern** (use `"pattern"`) to prevent the shell from expanding wildcards before passing them to the script.
 
 **Features:**
 - Supports bash wildcard patterns (`*`, `?`, etc.)
 - Shows filtered interactive menu with matching plugins
 - Auto-selects if only one plugin matches the pattern
 - Displays "Filtering plugins matching: pattern" message
+
+**Common mistake:**
+```bash
+# ❌ Wrong - shell expands woo* to first matching directory
+./build-release.sh woo*
+
+# ✅ Correct - quotes prevent shell expansion
+./build-release.sh "woo*"
+```
 
 ## What It Does
 

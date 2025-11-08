@@ -41,10 +41,16 @@ The `select_plugin()` function (lines 44-141) handles three modes of operation:
 
 **3. Filtered Interactive Menu (wildcard pattern)**
 - Parameter doesn't match an exact directory
-- Treats parameter as bash pattern (e.g., `woo*`, `*-addon`)
+- Treats parameter as bash pattern (e.g., `"woo*"`, `"*-addon"`)
 - Filters plugin list using pattern matching: `[[ "$plugin" == $filter ]]`
 - Displays filtered menu with matching plugins only
 - Auto-selects if only one match found
+
+**Critical: Pattern quoting** - Wildcard patterns MUST be quoted to prevent shell expansion:
+- `./build-release.sh "woo*"` ✅ Correct - quotes prevent shell from expanding
+- `./build-release.sh woo*` ❌ Wrong - shell expands to first matching directory
+
+Without quotes, bash expands wildcards before passing arguments to the script, defeating the filtering mechanism.
 
 The logic flow (lines 144-158):
 ```bash
@@ -58,9 +64,9 @@ fi
 
 This allows flexible invocation:
 - `./build-release.sh` → full menu
-- `./build-release.sh my-plugin` → direct build (if exists)
-- `./build-release.sh my*` → filtered menu
-- `./build-release.sh *addon*` → filtered menu
+- `./build-release.sh my-plugin` → direct build (if exact directory exists)
+- `./build-release.sh "my*"` → filtered menu (note: must quote!)
+- `./build-release.sh "*addon*"` → filtered menu (note: must quote!)
 
 ### Exclusion Patterns
 
@@ -128,14 +134,16 @@ Builds the specified plugin without showing the menu (only if exact directory ma
 
 ### Filtered Menu Mode
 ```bash
-./build-release.sh {pattern}
+./build-release.sh "{pattern}"
 ```
-Filters the plugin list using wildcard patterns:
-- `./build-release.sh woo*` - Show plugins starting with "woo"
-- `./build-release.sh *-addon` - Show plugins ending with "-addon"
-- `./build-release.sh *commerce*` - Show plugins containing "commerce"
+Filters the plugin list using wildcard patterns (must be quoted):
+- `./build-release.sh "woo*"` - Show plugins starting with "woo"
+- `./build-release.sh "*-addon"` - Show plugins ending with "-addon"
+- `./build-release.sh "*commerce*"` - Show plugins containing "commerce"
 
 Auto-selects if only one plugin matches the pattern.
+
+**Important:** Patterns must be quoted to prevent shell expansion. Without quotes, bash will expand the wildcard before passing it to the script, which will cause only the first matching directory to be selected instead of filtering the menu.
 
 ## Development Commands
 
