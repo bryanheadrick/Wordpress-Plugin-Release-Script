@@ -27,6 +27,41 @@ The script follows this hierarchy to find the main plugin file:
 
 This detection logic is critical - any modifications to plugin scanning should preserve this fallback hierarchy.
 
+### Plugin Selection and Filtering
+
+The `select_plugin()` function (lines 44-141) handles three modes of operation:
+
+**1. Full Interactive Menu (no parameter)**
+- Displays all available plugins with version numbers
+- User selects from numbered list
+
+**2. Direct Build (exact directory match)**
+- Parameter matches an existing plugin directory exactly
+- Skips menu, builds immediately
+
+**3. Filtered Interactive Menu (wildcard pattern)**
+- Parameter doesn't match an exact directory
+- Treats parameter as bash pattern (e.g., `woo*`, `*-addon`)
+- Filters plugin list using pattern matching: `[[ "$plugin" == $filter ]]`
+- Displays filtered menu with matching plugins only
+- Auto-selects if only one match found
+
+The logic flow (lines 144-158):
+```bash
+if [ -d "$SCRIPT_DIR/$1" ]; then
+    # Exact match - use directly
+else
+    # Not exact - treat as filter pattern
+    PLUGIN_FOLDER=$(select_plugin "$1")
+fi
+```
+
+This allows flexible invocation:
+- `./build-release.sh` → full menu
+- `./build-release.sh my-plugin` → direct build (if exists)
+- `./build-release.sh my*` → filtered menu
+- `./build-release.sh *addon*` → filtered menu
+
 ### Exclusion Patterns
 
 The script uses a two-tier exclusion system:
@@ -89,7 +124,18 @@ Displays a menu of all available plugins with their versions.
 ```bash
 ./build-release.sh {plugin-folder-name}
 ```
-Builds the specified plugin without showing the menu.
+Builds the specified plugin without showing the menu (only if exact directory match).
+
+### Filtered Menu Mode
+```bash
+./build-release.sh {pattern}
+```
+Filters the plugin list using wildcard patterns:
+- `./build-release.sh woo*` - Show plugins starting with "woo"
+- `./build-release.sh *-addon` - Show plugins ending with "-addon"
+- `./build-release.sh *commerce*` - Show plugins containing "commerce"
+
+Auto-selects if only one plugin matches the pattern.
 
 ## Development Commands
 
