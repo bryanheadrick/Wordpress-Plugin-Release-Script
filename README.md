@@ -78,7 +78,6 @@ The following are excluded by default:
 ### Development Files
 - `.claude/` (AI assistant files)
 - `node_modules/`
-- `src/` (source files)
 - `tests/`, `test/`
 - `composer.json`, `composer.lock`
 - `package.json`, `package-lock.json`, `yarn.lock`
@@ -120,7 +119,6 @@ touch .buildignore
 **Example `.buildignore` content:**
 ```
 # Exclude source files
-src/
 assets/scss/
 
 # Exclude specific files
