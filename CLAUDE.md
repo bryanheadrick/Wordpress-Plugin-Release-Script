@@ -13,10 +13,12 @@ This repository contains a bash script for building production-ready release pac
 The script operates in the following phases:
 
 1. **Plugin Discovery** - Scans the current directory for plugin folders (directories containing PHP files with "Plugin Name:" headers)
-2. **Version Detection** - Extracts version from the main plugin file's WordPress header (e.g., `Version: 1.4.1`)
-3. **Temporary Build** - Uses rsync to copy plugin files to a temporary directory, excluding development artifacts
-4. **Archive Creation** - Creates a ZIP file in `releases/` directory with naming format: `{plugin-name}-{version}.zip`
-5. **Cleanup** - Removes temporary files
+2. **Plugin Selection** - Interactive menu (with optional wildcard filtering) or direct specification
+3. **Version Detection** - Extracts version from the main plugin file's WordPress header (e.g., `Version: 1.4.1`)
+4. **Build Process** - Automatically detects and runs build tools (composer, npm, make) or uses custom `.buildconfig.json`
+5. **File Copying** - Uses rsync to copy plugin files to temporary directory, applying exclusion/inclusion rules
+6. **Archive Creation** - Creates a ZIP file in `releases/` directory with naming format: `{plugin-name}-{version}.zip`
+7. **Cleanup** - Removes temporary files
 
 ### Plugin File Detection Logic
 
@@ -68,23 +70,64 @@ This allows flexible invocation:
 - `./build-release.sh "my*"` → filtered menu (note: must quote!)
 - `./build-release.sh "*addon*"` → filtered menu (note: must quote!)
 
+### Build Process Automation
+
+The build process (lines 205-314) runs **before** file copying and operates in two modes:
+
+**1. Custom Build Configuration (.buildconfig.json)**
+
+If `.buildconfig.json` exists in the plugin directory:
+- Requires `jq` command-line JSON processor
+- Reads `build` array containing shell commands
+- Executes each command sequentially in the plugin directory
+- Falls back to automatic detection if jq is not installed
+
+Example detection and execution (lines 209-232):
+```bash
+BUILDCONFIG_FILE="$PLUGIN_PATH/.buildconfig.json"
+if [ -f "$BUILDCONFIG_FILE" ] && command -v jq; then
+    BUILD_COMMANDS=$(jq -r '.build[]? // empty' "$BUILDCONFIG_FILE")
+    # Execute each command
+fi
+```
+
+**2. Automatic Build Detection (Default)**
+
+If no `.buildconfig.json` exists or jq unavailable (lines 237-298):
+
+Checks in order:
+1. **Makefile** - Runs `make build`, falls back to `make`
+2. **composer.json** - Runs `composer install --no-dev --optimize-autoloader --no-interaction`
+   - Only runs if composer command is available
+3. **package.json** - Only if it contains a `"build"` script
+   - Runs `npm install --legacy-peer-deps` (falls back to regular npm install)
+   - Then runs `npm run build`
+   - Only runs if npm command is available
+
+**Note about vendor/ directory:**
+
+The `vendor/` directory is **not excluded by default** and will be included in releases. If you want to exclude it, add it to `.buildignore`.
+
 ### Exclusion Patterns
 
 The script uses a two-tier exclusion system:
 
-**1. Default Exclusions (lines 174-229)**
+**1. Default Exclusions (lines 320-381)**
 
 Defined in the `DEFAULT_EXCLUDES` array, organized by category:
 - Version control files (`.git`, `.github`, `.gitignore`)
-- Development dependencies (`node_modules/`, `vendor/`)
+- Development dependencies (`node_modules/`)
 - Build configuration (`webpack.config.js`, `package.json`, `composer.json`)
 - Testing files (`tests/`, `phpunit.xml`)
 - Documentation source files (`README.md`, `CHANGELOG.md`, `CLAUDE.md`)
 - Environment files (`.env*`, `*.log`, `*.sql`)
+- Source directories (`src/`)
+
+**Note:** `vendor/` is **not** in the default exclusions - it's included by default.
 
 When modifying default exclusions, maintain this categorical organization for clarity.
 
-**2. Custom Exclusions and Inclusions via .buildignore (lines 231-266)**
+**2. Custom Exclusions and Inclusions via .buildignore (lines 383-417)**
 
 The script checks for a `.buildignore` file in each plugin directory. If found:
 - Parses the file line by line
@@ -102,21 +145,21 @@ The parsing logic (lines 239-259) is critical - it handles:
 - Negation detection using regex: `^!`
 - Prefix removal using bash parameter expansion: `${line#!}`
 
-Custom exclusions are **additive** - they supplement default exclusions (line 269).
+Custom exclusions are **additive** - they supplement default exclusions (line 419).
 Custom inclusions **override** both default and custom exclusions.
 
-**3. Combined Processing with Rsync Arguments (lines 268-286)**
+**3. Combined Processing with Rsync Arguments (lines 419-436)**
 
 The script builds rsync arguments in a specific order (critical for proper functioning):
 
-1. **Include patterns first** (lines 274-277): Custom inclusions from `CUSTOM_INCLUDES` are converted to `--include` arguments
-2. **Exclude patterns second** (lines 279-282): All exclusions (default + custom) from `ALL_EXCLUDES` are converted to `--exclude` arguments
+1. **Include patterns first** (lines 424-427): Custom inclusions from `CUSTOM_INCLUDES` are converted to `--include` arguments
+2. **Exclude patterns second** (lines 429-432): All exclusions (default + custom) from `ALL_EXCLUDES` are converted to `--exclude` arguments
 
-This ordering is essential because rsync processes patterns sequentially - include patterns must come before exclude patterns to properly override exclusions. For example:
+This ordering is essential because rsync processes patterns sequentially - include patterns must come before exclude patterns to properly override exclusions. For example, to exclude most of vendor/ but keep one library:
 ```bash
---include=vendor/my-library/** --exclude=vendor/
+--exclude=vendor/ --include=vendor/my-library/** --include=vendor/my-library/
 ```
-This includes `vendor/my-library/` while excluding the rest of `vendor/`.
+Would need proper ordering to work correctly.
 
 ## Usage
 
@@ -172,14 +215,22 @@ unzip -l releases/{plugin-name}-{version}.zip
 
 ## Script Dependencies
 
-Required system utilities:
+**Required system utilities:**
 - `bash` - Shell execution
 - `rsync` - File copying with exclusions
 - `zip` - Archive creation
-- `grep`, `awk`, `du` - Text processing and file operations
+- `grep`, `awk`, `du`, `sed` - Text processing and file operations
 - `mktemp` - Temporary directory creation
 
 All are standard Unix/Linux tools except possibly rsync (may need installation on minimal systems).
+
+**Optional (for build automation):**
+- `composer` - PHP dependency manager (for composer.json projects)
+- `npm` - Node package manager (for package.json projects)
+- `make` - Build automation (for Makefile projects)
+- `jq` - JSON processor (required for `.buildconfig.json` support, falls back to auto-detection if unavailable)
+
+The script gracefully handles missing optional dependencies by skipping the corresponding build steps with warnings.
 
 ## Working with WordPress Plugin Structure
 

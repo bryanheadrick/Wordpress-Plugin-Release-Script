@@ -202,6 +202,103 @@ echo -e "${GREEN}Version: ${VERSION}${NC}"
 echo -e "${GREEN}Output: ${RELEASE_ZIP}${NC}"
 echo ""
 
+# Run build steps if build files exist
+echo -e "${YELLOW}Checking for build requirements...${NC}"
+
+# Check for .buildconfig.json and use custom build process if it exists
+BUILDCONFIG_FILE="$PLUGIN_PATH/.buildconfig.json"
+if [ -f "$BUILDCONFIG_FILE" ]; then
+    echo -e "${CYAN}Found .buildconfig.json - using custom build configuration${NC}"
+
+    if command -v jq >/dev/null 2>&1; then
+        cd "$PLUGIN_PATH"
+
+        # Read build commands array
+        BUILD_COMMANDS=$(jq -r '.build[]? // empty' "$BUILDCONFIG_FILE" 2>/dev/null)
+
+        if [ -n "$BUILD_COMMANDS" ]; then
+            while IFS= read -r cmd; do
+                if [ -n "$cmd" ]; then
+                    echo -e "${CYAN}Running: ${cmd}${NC}"
+                    if eval "$cmd" 2>/dev/null; then
+                        echo -e "${GREEN}✓ Command completed${NC}"
+                    else
+                        echo -e "${YELLOW}⚠ Command failed: $cmd${NC}"
+                    fi
+                fi
+            done <<< "$BUILD_COMMANDS"
+        fi
+
+        cd "$SCRIPT_DIR"
+    else
+        echo -e "${YELLOW}⚠ .buildconfig.json found but jq not installed - falling back to auto-detection${NC}"
+    fi
+fi
+
+# If no .buildconfig.json or jq not available, use automatic detection
+if [ ! -f "$BUILDCONFIG_FILE" ] || ! command -v jq >/dev/null 2>&1; then
+    # Check for Makefile and run make
+    if [ -f "$PLUGIN_PATH/Makefile" ]; then
+        echo -e "${CYAN}Found Makefile - running make build...${NC}"
+        cd "$PLUGIN_PATH"
+        if make build 2>/dev/null; then
+            echo -e "${GREEN}✓ Make build completed${NC}"
+        elif make 2>/dev/null; then
+            echo -e "${GREEN}✓ Make completed${NC}"
+        else
+            echo -e "${YELLOW}⚠ Make command failed or no build target found${NC}"
+        fi
+        cd "$SCRIPT_DIR"
+    fi
+
+    # Check for composer.json and run composer install
+    if [ -f "$PLUGIN_PATH/composer.json" ]; then
+        if command -v composer >/dev/null 2>&1; then
+            echo -e "${CYAN}Found composer.json - running composer install...${NC}"
+            cd "$PLUGIN_PATH"
+            if composer install --no-dev --optimize-autoloader --no-interaction 2>/dev/null; then
+                echo -e "${GREEN}✓ Composer install completed${NC}"
+            else
+                echo -e "${YELLOW}⚠ Composer install failed${NC}"
+            fi
+            cd "$SCRIPT_DIR"
+        else
+            echo -e "${YELLOW}⚠ composer.json found but composer not installed - skipping${NC}"
+        fi
+    fi
+
+    # Check for package.json and run npm build
+    if [ -f "$PLUGIN_PATH/package.json" ]; then
+        if command -v npm >/dev/null 2>&1; then
+            echo -e "${CYAN}Found package.json - checking for build script...${NC}"
+            cd "$PLUGIN_PATH"
+
+            # Check if package.json has a build script
+            if grep -q '"build"' package.json 2>/dev/null; then
+                echo -e "${CYAN}Running npm install...${NC}"
+                if npm install --legacy-peer-deps 2>/dev/null || npm install 2>/dev/null; then
+                    echo -e "${GREEN}✓ npm install completed${NC}"
+                    echo -e "${CYAN}Running npm run build...${NC}"
+                    if npm run build 2>/dev/null; then
+                        echo -e "${GREEN}✓ npm build completed${NC}"
+                    else
+                        echo -e "${YELLOW}⚠ npm build failed${NC}"
+                    fi
+                else
+                    echo -e "${YELLOW}⚠ npm install failed${NC}"
+                fi
+            else
+                echo -e "${YELLOW}⚠ No build script found in package.json - skipping npm build${NC}"
+            fi
+            cd "$SCRIPT_DIR"
+        else
+            echo -e "${YELLOW}⚠ package.json found but npm not installed - skipping${NC}"
+        fi
+    fi
+fi
+
+echo ""
+
 # Create temporary directory
 TEMP_DIR=$(mktemp -d)
 TEMP_PLUGIN_DIR="$TEMP_DIR/$PLUGIN_FOLDER"
@@ -226,8 +323,8 @@ DEFAULT_EXCLUDES=(
     'Thumbs.db'
     'node_modules'
     'node_modules/'
-    'src'
-    'src/'
+    '*.vue'
+    '*.jsx'
     'composer.lock'
     'package-lock.json'
     'yarn.lock'
@@ -265,6 +362,7 @@ DEFAULT_EXCLUDES=(
     'CLAUDE.md'
     'build-release.sh'
     '.buildignore'
+    '.buildconfig.json'
 )
 
 # Check for .buildignore file and add custom exclusions/inclusions

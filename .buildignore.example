@@ -45,8 +45,8 @@
 # Use ! prefix to INCLUDE files that are excluded by default
 # This is useful when you need to keep specific files from excluded directories
 
-# Example: Include a specific vendor library (vendor/ is excluded by default)
-# !vendor/
+# Example: Exclude most of vendor/ except one library
+# vendor/
 # !vendor/my-essential-library/
 # !vendor/my-essential-library/**
 
@@ -65,6 +65,13 @@
 # - Exclusion patterns are IN ADDITION to the default exclusions
 # - Inclusion patterns (!) can override BOTH default and custom exclusions
 # - The .buildignore file itself is automatically excluded
-# - Default exclusions include: .git, node_modules, vendor, tests, etc.
+# - Default exclusions include: .git, node_modules, src/, tests, etc.
+# - vendor/ is NOT excluded by default (included in releases)
 # - Inclusions must come with proper wildcards for directories (use trailing ** for contents)
 # - Be careful with negations - rsync processes rules in order
+#
+# Build Process Notes:
+# - If composer.json exists, composer install runs automatically
+# - If package.json exists with "build" script, npm install && npm run build runs
+# - If Makefile exists, make build (or make) runs
+# - node_modules/ is always excluded (only built assets should be in release)

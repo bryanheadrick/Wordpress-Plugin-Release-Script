@@ -1,0 +1,51 @@
+{
+  "_comment": "Build configuration for WordPress plugin release script",
+  "_description": "Place this file in your plugin root directory as .buildconfig.json to customize the build process",
+
+  "build": [
+    "composer install --no-dev --optimize-autoloader",
+    "npm install --legacy-peer-deps",
+    "npm run build",
+    "make build"
+  ],
+
+  "_notes": [
+    "The 'build' array contains commands to run in sequence during the build process",
+    "Each command is executed in the plugin directory",
+    "If a command fails, the build continues with a warning",
+    "You can use any shell commands in the build array",
+    "vendor/ is included by default (not excluded)",
+    "Use .buildignore to exclude vendor/ if needed"
+  ],
+
+  "_examples": {
+    "minimal": {
+      "build": ["composer install --no-dev"]
+    },
+    "npm_only": {
+      "build": [
+        "npm ci",
+        "npm run production"
+      ]
+    },
+    "custom_workflow": {
+      "build": [
+        "composer install --no-dev",
+        "npm install",
+        "npm run build",
+        "php artisan cache:clear",
+        "gulp compress"
+      ]
+    },
+    "no_auto_build": {
+      "build": [],
+      "_comment": "Empty build array skips automatic detection"
+    }
+  },
+
+  "_requirements": [
+    "Requires 'jq' command-line JSON processor to be installed",
+    "Install jq: apt-get install jq (Ubuntu/Debian) or brew install jq (macOS)",
+    "If jq is not installed, the script falls back to automatic build detection"
+  ]
+}

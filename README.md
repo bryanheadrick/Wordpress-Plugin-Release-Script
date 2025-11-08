@@ -57,9 +57,54 @@ Use wildcard patterns to filter the plugin list in the interactive menu:
 ## What It Does
 
 1. **Reads plugin version** from the main plugin file's header
-2. **Creates a clean copy** of the plugin, excluding development files
-3. **Generates a ZIP archive** in the `releases/` directory
-4. **Names the file** using format: `plugin-name-version.zip`
+2. **Runs build process** (if build files detected or configured)
+3. **Creates a clean copy** of the plugin, excluding development files
+4. **Generates a ZIP archive** in the `releases/` directory
+5. **Names the file** using format: `plugin-name-version.zip`
+
+## Build Process
+
+The script automatically detects and runs build tools before packaging:
+
+### Automatic Detection (Default)
+
+If no `.buildconfig.json` exists, the script automatically checks for and runs:
+
+**Makefile:**
+- Runs `make build` (falls back to `make` if no build target exists)
+
+**composer.json:**
+- Runs `composer install --no-dev --optimize-autoloader`
+- `vendor/` directory is included by default (not excluded)
+- Skips if composer is not installed
+
+**package.json:**
+- Only runs if a `"build"` script is defined
+- Executes `npm install` then `npm run build`
+- `node_modules/` is always excluded (only built assets are included)
+- Skips if npm is not installed
+
+### Custom Build Configuration
+
+Create a `.buildconfig.json` file in your plugin root to customize the build process:
+
+```json
+{
+  "build": [
+    "composer install --no-dev --optimize-autoloader",
+    "npm install --legacy-peer-deps",
+    "npm run build"
+  ]
+}
+```
+
+**Features:**
+- Specify custom build commands in any order
+- Commands run sequentially in the plugin directory
+- Empty `build` array skips all automatic detection
+- Requires `jq` to be installed (falls back to auto-detection if not available)
+
+**See `.buildconfig.json.example` for more examples**
 
 ## Excluded Files & Folders
 
@@ -169,7 +214,9 @@ releases/
 ## Features
 
 - ✅ **Interactive menu** - Browse and select from available plugins
-- ✅ **Wildcard filtering** - Filter plugin list using patterns (e.g., `woo*`)
+- ✅ **Wildcard filtering** - Filter plugin list using patterns (e.g., `"woo*"`)
+- ✅ **Automated builds** - Auto-detects and runs composer, npm, and make
+- ✅ **Custom build config** - Optional `.buildconfig.json` for custom workflows
 - ✅ **Version detection** - Automatically reads version from plugin file
 - ✅ **Clean builds** - No development files included
 - ✅ **Custom exclusions** - Per-plugin `.buildignore` support with negation patterns
@@ -181,10 +228,17 @@ releases/
 
 ## Requirements
 
-- `bash`
-- `rsync`
-- `zip`
-- `grep`, `awk`, `du` (standard Unix tools)
+### Required
+- `bash` - Shell execution
+- `rsync` - File copying with exclusions
+- `zip` - Archive creation
+- `grep`, `awk`, `du` - Text processing (standard Unix tools)
+
+### Optional (for build automation)
+- `composer` - For PHP dependency management
+- `npm` - For JavaScript builds
+- `make` - For Makefile-based builds
+- `jq` - For `.buildconfig.json` support (falls back to auto-detection without it)
 
 ## Notes
 
