@@ -4,8 +4,22 @@ This directory contains a build script to create production-ready release packag
 
 ## Usage
 
+### Interactive Menu (Recommended)
+
+Run without parameters to see an interactive plugin selection menu:
+
 ```bash
-./build-release.sh <plugin-folder-name>
+./build-release.sh
+```
+
+The menu displays all available plugins with their current versions, making it easy to select which plugin to build.
+
+### Direct Build
+
+Alternatively, specify the plugin folder name directly:
+
+```bash
+./build-release.sh [plugin-folder-name]
 ```
 
 ### Example
