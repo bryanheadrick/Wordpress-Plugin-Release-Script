@@ -1,0 +1,43 @@
+# .buildignore - Custom Build Exclusions
+#
+# This file allows you to specify additional files and folders to exclude
+# from your plugin release builds. It works similarly to .gitignore.
+#
+# Place this file in your plugin's root directory and rename it to .buildignore
+#
+# Usage:
+#   - One pattern per line
+#   - Lines starting with # are comments
+#   - Empty lines are ignored
+#   - Patterns support wildcards (*, ?, etc.)
+#   - Trailing slashes indicate directories
+#
+# Examples:
+
+# Exclude specific files
+# secret-config.php
+# internal-notes.txt
+
+# Exclude directories
+# src/
+# design-files/
+# documentation/
+
+# Exclude by pattern
+# *.bak
+# *.tmp
+# *-dev.php
+
+# Exclude development or source files
+# assets/scss/
+# assets/src/
+# scripts/
+
+# Exclude build artifacts from other tools
+# dist/uncompiled/
+# cache/
+
+# Notes:
+# - These exclusions are IN ADDITION to the default exclusions
+# - The .buildignore file itself is automatically excluded
+# - Default exclusions include: .git, node_modules, vendor, tests, etc.
