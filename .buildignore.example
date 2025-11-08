@@ -1,0 +1,70 @@
+# .buildignore - Custom Build Exclusions and Inclusions
+#
+# This file allows you to specify additional files and folders to exclude
+# from your plugin release builds, or to include files that would otherwise
+# be excluded by default. It works similarly to .gitignore.
+#
+# Place this file in your plugin's root directory and rename it to .buildignore
+#
+# Usage:
+#   - One pattern per line
+#   - Lines starting with # are comments
+#   - Empty lines are ignored
+#   - Patterns support wildcards (*, ?, etc.)
+#   - Trailing slashes indicate directories
+#   - Patterns starting with ! are INCLUSIONS (negations) - they override exclusions
+#
+# Examples:
+
+# Exclude specific files
+# secret-config.php
+# internal-notes.txt
+
+# Exclude directories
+# src/
+# design-files/
+# documentation/
+
+# Exclude by pattern
+# *.bak
+# *.tmp
+# *-dev.php
+
+# Exclude development or source files
+# assets/scss/
+# assets/src/
+# scripts/
+
+# Exclude build artifacts from other tools
+# dist/uncompiled/
+# cache/
+
+# ============================================
+# NEGATION PATTERNS (Inclusions)
+# ============================================
+# Use ! prefix to INCLUDE files that are excluded by default
+# This is useful when you need to keep specific files from excluded directories
+
+# Example: Include a specific vendor library (vendor/ is excluded by default)
+# !vendor/
+# !vendor/my-essential-library/
+# !vendor/my-essential-library/**
+
+# Example: Include composer.json for plugin that needs it at runtime
+# !composer.json
+
+# Example: Include specific README for distribution
+# !README.txt
+
+# Example: Include only production assets from src/
+# assets/src/
+# !assets/src/dist/
+# !assets/src/dist/**
+
+# Notes:
+# - Exclusion patterns are IN ADDITION to the default exclusions
+# - Inclusion patterns (!) can override BOTH default and custom exclusions
+# - The .buildignore file itself is automatically excluded
+# - Default exclusions include: .git, node_modules, vendor, tests, etc.
+# - Inclusions must come with proper wildcards for directories (use trailing ** for contents)
+# - Be careful with negations - rsync processes rules in order

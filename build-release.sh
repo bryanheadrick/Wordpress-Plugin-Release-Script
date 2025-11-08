@@ -170,63 +170,120 @@ TEMP_PLUGIN_DIR="$TEMP_DIR/$PLUGIN_FOLDER"
 echo -e "${YELLOW}Creating temporary build directory...${NC}"
 mkdir -p "$TEMP_PLUGIN_DIR"
 
+# Build default exclusion list
+DEFAULT_EXCLUDES=(
+    '.git'
+    '.git/'
+    '.github'
+    '.github/'
+    '.claude'
+    '.claude/'
+    '.gitignore'
+    '.gitattributes'
+    '.gitmodules'
+    '.gitlab-ci.yml'
+    '.travis.yml'
+    '.DS_Store'
+    'Thumbs.db'
+    'node_modules'
+    'node_modules/'
+    'src'
+    'src/'
+    'composer.lock'
+    'package-lock.json'
+    'yarn.lock'
+    '.env'
+    '.env.*'
+    '*.log'
+    '*.map'
+    '*.sql'
+    '*.zip'
+    '*.tar.gz'
+    '*.rar'
+    'tests/'
+    'test/'
+    'Test/'
+    'Tests/'
+    'phpunit.xml'
+    'phpunit.xml.dist'
+    '.phpunit.result.cache'
+    'webpack.config.js'
+    'gulpfile.js'
+    'Gruntfile.js'
+    'package.json'
+    'composer.json'
+    '.editorconfig'
+    '.eslintrc'
+    '.eslintrc.js'
+    '.eslintignore'
+    '.prettierrc'
+    '.stylelintrc'
+    'README.md'
+    'CHANGELOG.md'
+    'CONTRIBUTING.md'
+    'LICENSE.md'
+    'TODO.md'
+    'CLAUDE.md'
+    'build-release.sh'
+    '.buildignore'
+)
+
+# Check for .buildignore file and add custom exclusions/inclusions
+BUILDIGNORE_FILE="$PLUGIN_PATH/.buildignore"
+CUSTOM_EXCLUDES=()
+CUSTOM_INCLUDES=()
+
+if [ -f "$BUILDIGNORE_FILE" ]; then
+    echo -e "${CYAN}Found .buildignore file, loading custom rules...${NC}"
+
+    while IFS= read -r line; do
+        # Skip empty lines and comments
+        if [[ -z "$line" || "$line" =~ ^[[:space:]]*# ]]; then
+            continue
+        fi
+
+        # Trim whitespace
+        line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+
+        if [ -n "$line" ]; then
+            # Check for negation pattern (starts with !)
+            if [[ "$line" =~ ^! ]]; then
+                # Remove the ! prefix and add to includes
+                pattern="${line#!}"
+                CUSTOM_INCLUDES+=("$pattern")
+            else
+                # Regular exclusion pattern
+                CUSTOM_EXCLUDES+=("$line")
+            fi
+        fi
+    done < "$BUILDIGNORE_FILE"
+
+    # Display summary of loaded rules
+    local total_rules=$((${#CUSTOM_EXCLUDES[@]} + ${#CUSTOM_INCLUDES[@]}))
+    if [ $total_rules -gt 0 ]; then
+        echo -e "${CYAN}Loaded $total_rules custom rule(s): ${#CUSTOM_INCLUDES[@]} inclusion(s), ${#CUSTOM_EXCLUDES[@]} exclusion(s)${NC}"
+    fi
+fi
+
+# Combine default and custom excludes
+ALL_EXCLUDES=("${DEFAULT_EXCLUDES[@]}" "${CUSTOM_EXCLUDES[@]}")
+
+# Build rsync arguments (includes must come BEFORE excludes)
+RSYNC_ARGS=()
+
+# Add custom include patterns first (to override excludes)
+for include in "${CUSTOM_INCLUDES[@]}"; do
+    RSYNC_ARGS+=("--include=$include")
+done
+
+# Add all exclude patterns
+for exclude in "${ALL_EXCLUDES[@]}"; do
+    RSYNC_ARGS+=("--exclude=$exclude")
+done
+
 # Copy plugin files to temp directory, excluding unwanted files
 echo -e "${YELLOW}Copying plugin files...${NC}"
-rsync -av \
-    --exclude='.git' \
-    --exclude='.git/' \
-    --exclude='.github' \
-    --exclude='.github/' \
-    --exclude='.claude' \
-    --exclude='.claude/' \
-    --exclude='.gitignore' \
-    --exclude='.gitattributes' \
-    --exclude='.gitmodules' \
-    --exclude='.gitlab-ci.yml' \
-    --exclude='.travis.yml' \
-    --exclude='.DS_Store' \
-    --exclude='Thumbs.db' \
-    --exclude='node_modules' \
-    --exclude='node_modules/' \
-    --exclude='vendor' \
-    --exclude='vendor/' \
-    --exclude='composer.lock' \
-    --exclude='package-lock.json' \
-    --exclude='yarn.lock' \
-    --exclude='.env' \
-    --exclude='.env.*' \
-    --exclude='*.log' \
-    --exclude='*.map' \
-    --exclude='*.sql' \
-    --exclude='*.zip' \
-    --exclude='*.tar.gz' \
-    --exclude='*.rar' \
-    --exclude='tests/' \
-    --exclude='test/' \
-    --exclude='Test/' \
-    --exclude='Tests/' \
-    --exclude='phpunit.xml' \
-    --exclude='phpunit.xml.dist' \
-    --exclude='.phpunit.result.cache' \
-    --exclude='webpack.config.js' \
-    --exclude='gulpfile.js' \
-    --exclude='Gruntfile.js' \
-    --exclude='package.json' \
-    --exclude='composer.json' \
-    --exclude='.editorconfig' \
-    --exclude='.eslintrc' \
-    --exclude='.eslintrc.js' \
-    --exclude='.eslintignore' \
-    --exclude='.prettierrc' \
-    --exclude='.stylelintrc' \
-    --exclude='README.md' \
-    --exclude='CHANGELOG.md' \
-    --exclude='CONTRIBUTING.md' \
-    --exclude='LICENSE.md' \
-    --exclude='TODO.md' \
-    --exclude='CLAUDE.md' \
-    --exclude='build-release.sh' \
-    "$PLUGIN_PATH/" "$TEMP_PLUGIN_DIR/"
+rsync -av "${RSYNC_ARGS[@]}" "$PLUGIN_PATH/" "$TEMP_PLUGIN_DIR/"
 
 # Remove the previous release if it exists
 if [ -f "$RELEASE_ZIP" ]; then

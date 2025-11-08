@@ -37,7 +37,11 @@ Alternatively, specify the plugin folder name directly:
 
 ## Excluded Files & Folders
 
-The script automatically excludes:
+The script automatically excludes default development files, and you can add custom exclusions using a `.buildignore` file.
+
+### Default Exclusions
+
+The following are excluded by default:
 
 ### Version Control
 - `.git/` and all git-related files
@@ -48,7 +52,7 @@ The script automatically excludes:
 ### Development Files
 - `.claude/` (AI assistant files)
 - `node_modules/`
-- `vendor/` (Composer dependencies)
+- `src/` (source files)
 - `tests/`, `test/`
 - `composer.json`, `composer.lock`
 - `package.json`, `package-lock.json`, `yarn.lock`
@@ -75,6 +79,53 @@ The script automatically excludes:
 - `.eslintrc*`, `.eslintignore`
 - `.prettierrc`, `.stylelintrc`
 - `phpunit.xml*`, `.phpunit.result.cache`
+
+### Custom Exclusions with .buildignore
+
+You can add plugin-specific exclusions by creating a `.buildignore` file in your plugin's root directory. This file works similarly to `.gitignore`:
+
+**Create a `.buildignore` file:**
+```bash
+# In your plugin directory
+cd your-plugin-name/
+touch .buildignore
+```
+
+**Example `.buildignore` content:**
+```
+# Exclude source files
+src/
+assets/scss/
+
+# Exclude specific files
+secret-config.php
+*.bak
+
+# Exclude build artifacts
+dist/uncompiled/
+
+# Include patterns (negation) - override default exclusions
+# Include a specific vendor library even though vendor/ is excluded by default
+!vendor/
+!vendor/my-essential-library/
+!vendor/my-essential-library/**
+
+# Include composer.json if plugin needs it at runtime
+!composer.json
+```
+
+**Features:**
+- One pattern per line
+- Lines starting with `#` are comments
+- Empty lines are ignored
+- Supports wildcards (`*`, `?`, etc.)
+- Trailing slashes indicate directories
+- Exclusions are **additive** to the default exclusions
+- **Negation support**: Patterns starting with `!` are **inclusions** that override exclusions
+  - Use `!pattern` to include files/folders that would otherwise be excluded
+  - Useful for including specific items from excluded directories (e.g., `!vendor/my-library/`)
+  - Can override both default exclusions and custom exclusions
+- See `.buildignore.example` for a complete example
 
 ## Output
 
