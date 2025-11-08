@@ -16,16 +16,42 @@ The menu displays all available plugins with their current versions, making it e
 
 ### Direct Build
 
-Alternatively, specify the plugin folder name directly:
+Specify the plugin folder name directly to build without showing a menu:
 
 ```bash
-./build-release.sh [plugin-folder-name]
+./build-release.sh woocommerce-generic-plugin
 ```
 
-### Example
+### Filtered Menu (Wildcard Pattern)
+
+Use wildcard patterns to filter the plugin list in the interactive menu:
 
 ```bash
-./build-release.sh woocommerce-purchase-order-upload-addon
+# Show only plugins starting with "woo"
+./build-release.sh "woo*"
+
+# Show only plugins ending with "-addon"
+./build-release.sh "*-addon"
+
+# Show plugins containing "commerce"
+./build-release.sh "*commerce*"
+```
+
+**Important:** Always **quote the pattern** (use `"pattern"`) to prevent the shell from expanding wildcards before passing them to the script.
+
+**Features:**
+- Supports bash wildcard patterns (`*`, `?`, etc.)
+- Shows filtered interactive menu with matching plugins
+- Auto-selects if only one plugin matches the pattern
+- Displays "Filtering plugins matching: pattern" message
+
+**Common mistake:**
+```bash
+# ❌ Wrong - shell expands woo* to first matching directory
+./build-release.sh woo*
+
+# ✅ Correct - quotes prevent shell expansion
+./build-release.sh "woo*"
 ```
 
 ## What It Does
@@ -137,13 +163,16 @@ releases/
 Example output:
 ```
 releases/
-└── woocommerce-purchase-order-upload-addon-1.4.1.zip
+└── woocommerce-generic-plugin-1.4.1.zip
 ```
 
 ## Features
 
+- ✅ **Interactive menu** - Browse and select from available plugins
+- ✅ **Wildcard filtering** - Filter plugin list using patterns (e.g., `woo*`)
 - ✅ **Version detection** - Automatically reads version from plugin file
 - ✅ **Clean builds** - No development files included
+- ✅ **Custom exclusions** - Per-plugin `.buildignore` support with negation patterns
 - ✅ **Overwrite protection** - Removes old versions before creating new ones
 - ✅ **Size reporting** - Shows final archive size
 - ✅ **Content verification** - Displays archive contents after build
@@ -168,9 +197,9 @@ releases/
 ## Example Output
 
 ```
-Building release for: woocommerce-purchase-order-upload-addon
+Building release for: woocommerce-generic-plugin
 Version: 1.4.1
-Output: /path/to/releases/woocommerce-purchase-order-upload-addon-1.4.1.zip
+Output: /path/to/releases/woocommerce-generic-plugin-1.4.1.zip
 
 Creating temporary build directory...
 Copying plugin files...
@@ -180,10 +209,10 @@ Cleaning up...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ Release built successfully!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Plugin:   woocommerce-purchase-order-upload-addon
+Plugin:   woocommerce-generic-plugin
 Version:  1.4.1
 Size:     36K
-Location: /path/to/releases/woocommerce-purchase-order-upload-addon-1.4.1.zip
+Location: /path/to/releases/woocommerce-generic-plugin-1.4.1.zip
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 

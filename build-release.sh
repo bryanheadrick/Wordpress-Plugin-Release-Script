@@ -1,9 +1,12 @@
 #!/bin/bash
 
 # Build Release Script for WordPress Plugins
-# Usage: ./build-release.sh [plugin-folder-name]
-# Example: ./build-release.sh woocommerce-purchase-order-upload-addon
-# If no parameter is provided, an interactive menu will be shown
+# Usage: ./build-release.sh [plugin-folder-name-or-pattern]
+# Examples:
+#   ./build-release.sh                                    # Show interactive menu with all plugins
+#   ./build-release.sh woocommerce-generic-plugin         # Build specific plugin directly
+#   ./build-release.sh woo*                               # Show filtered menu matching pattern
+#   ./build-release.sh *-addon                            # Show all plugins ending with -addon
 
 set -e  # Exit on error
 
@@ -42,8 +45,35 @@ scan_plugins() {
 
 # Function to display plugin selection menu
 select_plugin() {
+    local filter="$1"
+    local all_plugins=()
     local plugins=()
-    mapfile -t plugins < <(scan_plugins | sort)
+    mapfile -t all_plugins < <(scan_plugins | sort)
+
+    # Apply filter if provided
+    if [ -n "$filter" ]; then
+        echo -e "${CYAN}Filtering plugins matching: ${YELLOW}$filter${NC}" >&2
+        for plugin in "${all_plugins[@]}"; do
+            # Use bash pattern matching
+            if [[ "$plugin" == $filter ]]; then
+                plugins+=("$plugin")
+            fi
+        done
+
+        if [ ${#plugins[@]} -eq 0 ]; then
+            echo -e "${RED}Error: No plugins found matching pattern '$filter'${NC}" >&2
+            exit 1
+        fi
+
+        # Auto-select if only one match
+        if [ ${#plugins[@]} -eq 1 ]; then
+            echo -e "${GREEN}Auto-selecting only match: ${plugins[0]}${NC}" >&2
+            echo "${plugins[0]}"
+            return 0
+        fi
+    else
+        plugins=("${all_plugins[@]}")
+    fi
 
     if [ ${#plugins[@]} -eq 0 ]; then
         echo -e "${RED}Error: No plugin directories found${NC}" >&2
@@ -115,10 +145,19 @@ select_plugin() {
 
 # Check if plugin folder is provided
 if [ -z "$1" ]; then
+    # No parameter - show full menu
     PLUGIN_FOLDER=$(select_plugin)
     echo ""
 else
-    PLUGIN_FOLDER="$1"
+    # Parameter provided - check if it's an exact directory match
+    if [ -d "$SCRIPT_DIR/$1" ]; then
+        # Exact match - use it directly
+        PLUGIN_FOLDER="$1"
+    else
+        # Not an exact match - treat as filter pattern
+        PLUGIN_FOLDER=$(select_plugin "$1")
+        echo ""
+    fi
 fi
 
 PLUGIN_PATH="$SCRIPT_DIR/$PLUGIN_FOLDER"
