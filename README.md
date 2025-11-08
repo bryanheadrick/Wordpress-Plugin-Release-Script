@@ -52,7 +52,7 @@ The following are excluded by default:
 ### Development Files
 - `.claude/` (AI assistant files)
 - `node_modules/`
-- `vendor/` (Composer dependencies)
+- `src/` (source files)
 - `tests/`, `test/`
 - `composer.json`, `composer.lock`
 - `package.json`, `package-lock.json`, `yarn.lock`
@@ -103,6 +103,15 @@ secret-config.php
 
 # Exclude build artifacts
 dist/uncompiled/
+
+# Include patterns (negation) - override default exclusions
+# Include a specific vendor library even though vendor/ is excluded by default
+!vendor/
+!vendor/my-essential-library/
+!vendor/my-essential-library/**
+
+# Include composer.json if plugin needs it at runtime
+!composer.json
 ```
 
 **Features:**
@@ -112,6 +121,10 @@ dist/uncompiled/
 - Supports wildcards (`*`, `?`, etc.)
 - Trailing slashes indicate directories
 - Exclusions are **additive** to the default exclusions
+- **Negation support**: Patterns starting with `!` are **inclusions** that override exclusions
+  - Use `!pattern` to include files/folders that would otherwise be excluded
+  - Useful for including specific items from excluded directories (e.g., `!vendor/my-library/`)
+  - Can override both default exclusions and custom exclusions
 - See `.buildignore.example` for a complete example
 
 ## Output

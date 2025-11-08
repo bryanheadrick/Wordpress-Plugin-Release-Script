@@ -228,12 +228,13 @@ DEFAULT_EXCLUDES=(
     '.buildignore'
 )
 
-# Check for .buildignore file and add custom exclusions
+# Check for .buildignore file and add custom exclusions/inclusions
 BUILDIGNORE_FILE="$PLUGIN_PATH/.buildignore"
 CUSTOM_EXCLUDES=()
+CUSTOM_INCLUDES=()
 
 if [ -f "$BUILDIGNORE_FILE" ]; then
-    echo -e "${CYAN}Found .buildignore file, loading custom exclusions...${NC}"
+    echo -e "${CYAN}Found .buildignore file, loading custom rules...${NC}"
 
     while IFS= read -r line; do
         # Skip empty lines and comments
@@ -245,27 +246,44 @@ if [ -f "$BUILDIGNORE_FILE" ]; then
         line=$(echo "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
 
         if [ -n "$line" ]; then
-            CUSTOM_EXCLUDES+=("$line")
+            # Check for negation pattern (starts with !)
+            if [[ "$line" =~ ^! ]]; then
+                # Remove the ! prefix and add to includes
+                pattern="${line#!}"
+                CUSTOM_INCLUDES+=("$pattern")
+            else
+                # Regular exclusion pattern
+                CUSTOM_EXCLUDES+=("$line")
+            fi
         fi
     done < "$BUILDIGNORE_FILE"
 
-    if [ ${#CUSTOM_EXCLUDES[@]} -gt 0 ]; then
-        echo -e "${CYAN}Loaded ${#CUSTOM_EXCLUDES[@]} custom exclusion(s)${NC}"
+    # Display summary of loaded rules
+    local total_rules=$((${#CUSTOM_EXCLUDES[@]} + ${#CUSTOM_INCLUDES[@]}))
+    if [ $total_rules -gt 0 ]; then
+        echo -e "${CYAN}Loaded $total_rules custom rule(s): ${#CUSTOM_INCLUDES[@]} inclusion(s), ${#CUSTOM_EXCLUDES[@]} exclusion(s)${NC}"
     fi
 fi
 
 # Combine default and custom excludes
 ALL_EXCLUDES=("${DEFAULT_EXCLUDES[@]}" "${CUSTOM_EXCLUDES[@]}")
 
-# Build rsync exclude arguments
-EXCLUDE_ARGS=()
+# Build rsync arguments (includes must come BEFORE excludes)
+RSYNC_ARGS=()
+
+# Add custom include patterns first (to override excludes)
+for include in "${CUSTOM_INCLUDES[@]}"; do
+    RSYNC_ARGS+=("--include=$include")
+done
+
+# Add all exclude patterns
 for exclude in "${ALL_EXCLUDES[@]}"; do
-    EXCLUDE_ARGS+=("--exclude=$exclude")
+    RSYNC_ARGS+=("--exclude=$exclude")
 done
 
 # Copy plugin files to temp directory, excluding unwanted files
 echo -e "${YELLOW}Copying plugin files...${NC}"
-rsync -av "${EXCLUDE_ARGS[@]}" "$PLUGIN_PATH/" "$TEMP_PLUGIN_DIR/"
+rsync -av "${RSYNC_ARGS[@]}" "$PLUGIN_PATH/" "$TEMP_PLUGIN_DIR/"
 
 # Remove the previous release if it exists
 if [ -f "$RELEASE_ZIP" ]; then
