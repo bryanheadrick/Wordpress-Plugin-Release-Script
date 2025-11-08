@@ -65,7 +65,12 @@ select_plugin() {
         local version=""
 
         if [ ! -f "$plugin_file" ]; then
-            plugin_file=$(find "$SCRIPT_DIR/$plugin" -maxdepth 1 -name "*.php" -type f | head -n 1)
+            # Look for PHP files with "Plugin Name:" header (indicates main plugin file)
+            plugin_file=$(grep -l "Plugin Name:" "$SCRIPT_DIR/$plugin"/*.php 2>/dev/null | head -n 1)
+            if [ -z "$plugin_file" ]; then
+                # Fall back to first PHP file found
+                plugin_file=$(find "$SCRIPT_DIR/$plugin" -maxdepth 1 -name "*.php" -type f | head -n 1)
+            fi
         fi
 
         if [ -f "$plugin_file" ]; then
@@ -132,8 +137,12 @@ mkdir -p "$RELEASES_DIR"
 # Get version from plugin file
 PLUGIN_FILE="$PLUGIN_PATH/$PLUGIN_FOLDER.php"
 if [ ! -f "$PLUGIN_FILE" ]; then
-    # Try to find main plugin file
-    PLUGIN_FILE=$(find "$PLUGIN_PATH" -maxdepth 1 -name "*.php" -type f | head -n 1)
+    # Look for PHP files with "Plugin Name:" header (indicates main plugin file)
+    PLUGIN_FILE=$(grep -l "Plugin Name:" "$PLUGIN_PATH"/*.php 2>/dev/null | head -n 1)
+    if [ -z "$PLUGIN_FILE" ]; then
+        # Fall back to first PHP file found
+        PLUGIN_FILE=$(find "$PLUGIN_PATH" -maxdepth 1 -name "*.php" -type f | head -n 1)
+    fi
 fi
 
 if [ -f "$PLUGIN_FILE" ]; then

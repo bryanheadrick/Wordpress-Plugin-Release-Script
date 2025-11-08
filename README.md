@@ -1,4 +1,6 @@
-# Wordpress Plugin Release Script
+# Plugin Build Release Script
+
+This directory contains a build script to create production-ready release packages for WordPress plugins.
 
 ## Usage
 
@@ -9,7 +11,7 @@
 ### Example
 
 ```bash
-./build-release.sh plugin-name
+./build-release.sh woocommerce-purchase-order-upload-addon
 ```
 
 ## What It Does
@@ -70,7 +72,7 @@ releases/
 Example output:
 ```
 releases/
-└── plugin-name-1.4.1.zip
+└── woocommerce-purchase-order-upload-addon-1.4.1.zip
 ```
 
 ## Features
@@ -101,9 +103,9 @@ releases/
 ## Example Output
 
 ```
-Building release for: plugin-name
+Building release for: woocommerce-purchase-order-upload-addon
 Version: 1.4.1
-Output: /path/to/releases/plugin-name-1.4.1.zip
+Output: /path/to/releases/woocommerce-purchase-order-upload-addon-1.4.1.zip
 
 Creating temporary build directory...
 Copying plugin files...
@@ -113,10 +115,10 @@ Cleaning up...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ✓ Release built successfully!
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Plugin:   plugin-name
+Plugin:   woocommerce-purchase-order-upload-addon
 Version:  1.4.1
 Size:     36K
-Location: /path/to/releases/plugin-name-1.4.1.zip
+Location: /path/to/releases/woocommerce-purchase-order-upload-addon-1.4.1.zip
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ```
 
